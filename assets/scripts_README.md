@@ -16,31 +16,29 @@ In an AI-driven development process—particularly with tools like [Cursor](http
 8. **Clear subtasks**—remove subtasks from specified tasks to allow regeneration or restructuring.
 9. **Show task details**—display detailed information about a specific task and its subtasks.
 
-## Configuration
+## Configuration (Updated)
 
-The script can be configured through environment variables in a `.env` file at the root of the project:
+Task Master configuration is now managed through two primary methods:
 
-### Required Configuration
-- `ANTHROPIC_API_KEY`: Your Anthropic API key for Claude
+1.  **`.taskmasterconfig` File (Project Root - Primary)**
 
-### Optional Configuration
-- `MODEL`: Specify which Claude model to use (default: "claude-3-7-sonnet-20250219")
-- `MAX_TOKENS`: Maximum tokens for model responses (default: 4000)
-- `TEMPERATURE`: Temperature for model responses (default: 0.7)
-- `PERPLEXITY_API_KEY`: Your Perplexity API key for research-backed subtask generation
-- `PERPLEXITY_MODEL`: Specify which Perplexity model to use (default: "sonar-medium-online")
-- `DEBUG`: Enable debug logging (default: false)
-- `LOG_LEVEL`: Log level - debug, info, warn, error (default: info)
-- `DEFAULT_SUBTASKS`: Default number of subtasks when expanding (default: 3)
-- `DEFAULT_PRIORITY`: Default priority for generated tasks (default: medium)
-- `PROJECT_NAME`: Override default project name in tasks.json
-- `PROJECT_VERSION`: Override default version in tasks.json
+    - Stores AI model selections (`main`, `research`, `fallback`), model parameters (`maxTokens`, `temperature`), `logLevel`, `defaultSubtasks`, `defaultPriority`, `projectName`, etc.
+    - Managed using the `task-master models --setup` command or the `models` MCP tool.
+    - This is the main configuration file for most settings.
+
+2.  **Environment Variables (`.env` File - API Keys Only)**
+    - Used **only** for sensitive **API Keys** (e.g., `ANTHROPIC_API_KEY`, `PERPLEXITY_API_KEY`).
+    - Create a `.env` file in your project root for CLI usage.
+    - See `assets/env.example` for required key names.
+
+**Important:** Settings like `MODEL`, `MAX_TOKENS`, `TEMPERATURE`, `LOG_LEVEL`, etc., are **no longer set via `.env`**. Use `task-master models --setup` instead.
 
 ## How It Works
 
-1. **`tasks.json`**:  
-   - A JSON file at the project root containing an array of tasks (each with `id`, `title`, `description`, `status`, etc.).  
-   - The `meta` field can store additional info like the project's name, version, or reference to the PRD.  
+1. **`tasks.json`**:
+
+   - A JSON file at the project root containing an array of tasks (each with `id`, `title`, `description`, `status`, etc.).
+   - The `meta` field can store additional info like the project's name, version, or reference to the PRD.
    - Tasks can have `subtasks` for more detailed implementation steps.
    - Dependencies are displayed with status indicators (✅ for completed, ⏱️ for pending) to easily track progress.
 
@@ -50,7 +48,7 @@ The script can be configured through environment variables in a `.env` file at t
    ```bash
    # If installed globally
    task-master [command] [options]
-   
+
    # If using locally within the project
    node scripts/dev.js [command] [options]
    ```
@@ -111,6 +109,7 @@ task-master update --file=custom-tasks.json --from=5 --prompt="Change database f
 ```
 
 Notes:
+
 - The `--prompt` parameter is required and should explain the changes or new context
 - Only tasks that aren't marked as 'done' will be updated
 - Tasks with ID >= the specified --from value will be updated
@@ -134,6 +133,7 @@ task-master set-status --id=1,2,3 --status=done
 ```
 
 Notes:
+
 - When marking a parent task as "done", all of its subtasks will automatically be marked as "done" as well
 - Common status values are 'done', 'pending', and 'deferred', but any string is accepted
 - You can specify multiple task IDs by separating them with commas
@@ -183,29 +183,25 @@ task-master clear-subtasks --all
 ```
 
 Notes:
+
 - After clearing subtasks, task files are automatically regenerated
 - This is useful when you want to regenerate subtasks with a different approach
 - Can be combined with the `expand` command to immediately generate new subtasks
 - Works with both parent tasks and individual subtasks
 
-## AI Integration
+## AI Integration (Updated)
 
-The script integrates with two AI services:
-
-1. **Anthropic Claude**: Used for parsing PRDs, generating tasks, and creating subtasks.
-2. **Perplexity AI**: Used for research-backed subtask generation when the `--research` flag is specified.
-
-The Perplexity integration uses the OpenAI client to connect to Perplexity's API, which provides enhanced research capabilities for generating more informed subtasks. If the Perplexity API is unavailable or encounters an error, the script will automatically fall back to using Anthropic's Claude.
-
-To use the Perplexity integration:
-1. Obtain a Perplexity API key
-2. Add `PERPLEXITY_API_KEY` to your `.env` file
-3. Optionally specify `PERPLEXITY_MODEL` in your `.env` file (default: "sonar-medium-online")
-4. Use the `--research` flag with the `expand` command
+- The script now uses a unified AI service layer (`ai-services-unified.js`).
+- Model selection (e.g., Claude vs. Perplexity for `--research`) is determined by the configuration in `.taskmasterconfig` based on the requested `role` (`main` or `research`).
+- API keys are automatically resolved from your `.env` file (for CLI) or MCP session environment.
+- To use the research capabilities (e.g., `expand --research`), ensure you have:
+  1.  Configured a model for the `research` role using `task-master models --setup` (Perplexity models are recommended).
+  2.  Added the corresponding API key (e.g., `PERPLEXITY_API_KEY`) to your `.env` file.
 
 ## Logging
 
 The script supports different logging levels controlled by the `LOG_LEVEL` environment variable:
+
 - `debug`: Detailed information, typically useful for troubleshooting
 - `info`: Confirmation that things are working as expected (default)
 - `warn`: Warning messages that don't prevent execution
@@ -228,17 +224,20 @@ task-master remove-dependency --id=<id> --depends-on=<id>
 These commands:
 
 1. **Allow precise dependency management**:
+
    - Add dependencies between tasks with automatic validation
    - Remove dependencies when they're no longer needed
    - Update task files automatically after changes
 
 2. **Include validation checks**:
+
    - Prevent circular dependencies (a task depending on itself)
    - Prevent duplicate dependencies
    - Verify that both tasks exist before adding/removing dependencies
    - Check if dependencies exist before attempting to remove them
 
 3. **Provide clear feedback**:
+
    - Success messages confirm when dependencies are added/removed
    - Error messages explain why operations failed (if applicable)
 
@@ -263,6 +262,7 @@ task-master validate-dependencies --file=custom-tasks.json
 ```
 
 This command:
+
 - Scans all tasks and subtasks for non-existent dependencies
 - Identifies potential self-dependencies (tasks referencing themselves)
 - Reports all found issues without modifying files
@@ -284,6 +284,7 @@ task-master fix-dependencies --file=custom-tasks.json
 ```
 
 This command:
+
 1. **Validates all dependencies** across tasks and subtasks
 2. **Automatically removes**:
    - References to non-existent tasks and subtasks
@@ -321,6 +322,7 @@ task-master analyze-complexity --research
 ```
 
 Notes:
+
 - The command uses Claude to analyze each task's complexity (or Perplexity with --research flag)
 - Tasks are scored on a scale of 1-10
 - Each task receives a recommended number of subtasks based on DEFAULT_SUBTASKS configuration
@@ -345,33 +347,35 @@ task-master expand --id=8 --num=5 --prompt="Custom prompt"
 ```
 
 When a complexity report exists:
+
 - The `expand` command will use the recommended subtask count from the report (unless overridden)
 - It will use the tailored expansion prompt from the report (unless a custom prompt is provided)
 - When using `--all`, tasks are sorted by complexity score (highest first)
 - The `--research` flag is preserved from the complexity analysis to expansion
 
 The output report structure is:
+
 ```json
 {
-  "meta": {
-    "generatedAt": "2023-06-15T12:34:56.789Z",
-    "tasksAnalyzed": 20,
-    "thresholdScore": 5,
-    "projectName": "Your Project Name",
-    "usedResearch": true
-  },
-  "complexityAnalysis": [
-    {
-      "taskId": 8,
-      "taskTitle": "Develop Implementation Drift Handling",
-      "complexityScore": 9.5,
-      "recommendedSubtasks": 6,
-      "expansionPrompt": "Create subtasks that handle detecting...",
-      "reasoning": "This task requires sophisticated logic...",
-      "expansionCommand": "task-master expand --id=8 --num=6 --prompt=\"Create subtasks...\" --research"
-    },
-    // More tasks sorted by complexity score (highest first)
-  ]
+	"meta": {
+		"generatedAt": "2023-06-15T12:34:56.789Z",
+		"tasksAnalyzed": 20,
+		"thresholdScore": 5,
+		"projectName": "Your Project Name",
+		"usedResearch": true
+	},
+	"complexityAnalysis": [
+		{
+			"taskId": 8,
+			"taskTitle": "Develop Implementation Drift Handling",
+			"complexityScore": 9.5,
+			"recommendedSubtasks": 6,
+			"expansionPrompt": "Create subtasks that handle detecting...",
+			"reasoning": "This task requires sophisticated logic...",
+			"expansionCommand": "task-master expand --id=8 --num=6 --prompt=\"Create subtasks...\" --research"
+		}
+		// More tasks sorted by complexity score (highest first)
+	]
 }
 ```
 

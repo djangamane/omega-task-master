@@ -9,6 +9,9 @@ jspm_packages/
 .env.test.local
 .env.production.local
 
+# Cursor configuration -- might have ENV variables. Included by default
+# .cursor/mcp.json
+
 # Logs
 logs
 *.log
@@ -16,6 +19,8 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 lerna-debug.log*
+tests/e2e/_runs/
+tests/e2e/log/
 
 # Coverage directory used by tools like istanbul
 coverage
@@ -56,3 +61,6 @@ dist
 *.debug
 init-debug.log
 dev-debug.log
+
+# NPMRC
+.npmrc

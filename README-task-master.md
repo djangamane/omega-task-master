@@ -13,25 +13,22 @@ A task management system for AI-driven development with Claude, designed to work
 
 ## Configuration
 
-The script can be configured through environment variables in a `.env` file at the root of the project:
+Taskmaster uses two primary configuration methods:
 
-### Required Configuration
+1.  **`.taskmasterconfig` File (Project Root)**
 
-- `ANTHROPIC_API_KEY`: Your Anthropic API key for Claude
+    - Stores most settings: AI model selections (main, research, fallback), parameters (max tokens, temperature), logging level, default priority/subtasks, project name.
+    - **Created and managed using `task-master models --setup` CLI command or the `models` MCP tool.**
+    - Do not edit manually unless you know what you are doing.
 
-### Optional Configuration
+2.  **Environment Variables (`.env` file or MCP `env` block)**
+    - Used **only** for sensitive **API Keys** (e.g., `ANTHROPIC_API_KEY`, `PERPLEXITY_API_KEY`, etc.) and specific endpoints (like `OLLAMA_BASE_URL`).
+    - **For CLI:** Place keys in a `.env` file in your project root.
+    - **For MCP/Cursor:** Place keys in the `env` section of your `.cursor/mcp.json` (or other MCP config according to the AI IDE or client you use) file under the `taskmaster-ai` server definition.
 
-- `MODEL`: Specify which Claude model to use (default: "claude-3-7-sonnet-20250219")
-- `MAX_TOKENS`: Maximum tokens for model responses (default: 4000)
-- `TEMPERATURE`: Temperature for model responses (default: 0.7)
-- `PERPLEXITY_API_KEY`: Your Perplexity API key for research-backed subtask generation
-- `PERPLEXITY_MODEL`: Specify which Perplexity model to use (default: "sonar-medium-online")
-- `DEBUG`: Enable debug logging (default: false)
-- `LOG_LEVEL`: Log level - debug, info, warn, error (default: info)
-- `DEFAULT_SUBTASKS`: Default number of subtasks when expanding (default: 3)
-- `DEFAULT_PRIORITY`: Default priority for generated tasks (default: medium)
-- `PROJECT_NAME`: Override default project name in tasks.json
-- `PROJECT_VERSION`: Override default version in tasks.json
+**Important:** Settings like model choices, max tokens, temperature, and log level are **no longer configured via environment variables.** Use the `task-master models` command or tool.
+
+See the [Configuration Guide](docs/configuration.md) for full details.
 
 ## Installation
 
@@ -50,14 +47,24 @@ npm install task-master-ai
 task-master init
 
 # If installed locally
-npx task-master-init
+npx task-master init
 ```
 
 This will prompt you for project details and set up a new project with the necessary files and structure.
 
 ### Important Notes
 
-1. This package uses ES modules. Your package.json should include `"type": "module"`.
+1. **ES Modules Configuration:**
+
+   - This project uses ES Modules (ESM) instead of CommonJS.
+   - This is set via `"type": "module"` in your package.json.
+   - Use `import/export` syntax instead of `require()`.
+   - Files should use `.js` or `.mjs` extensions.
+   - To use a CommonJS module, either:
+     - Rename it with `.cjs` extension
+     - Use `await import()` for dynamic imports
+   - If you need CommonJS throughout your project, remove `"type": "module"` from package.json, but Task Master scripts expect ESM.
+
 2. The Anthropic SDK version should be 0.39.0 or higher.
 
 ## Quick Start with Global Commands
@@ -136,7 +143,7 @@ To enable enhanced task management capabilities directly within Cursor using the
 4. Configure with the following details:
    - Name: "Task Master"
    - Type: "Command"
-   - Command: "npx -y --package task-master-ai task-master-mcp"
+   - Command: "npx -y task-master-ai"
 5. Save the settings
 
 Once configured, you can interact with Task Master's task management commands directly through Cursor's interface, providing a more integrated experience.
